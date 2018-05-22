@@ -474,7 +474,7 @@ public:
     return false;
   }
 
-private:
+public://infinidb
   /// Complete query of the SQL-statement.
   LEX_STRING m_query;
 

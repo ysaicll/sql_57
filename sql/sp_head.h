@@ -64,6 +64,43 @@ public:
   programs (stored routines, triggers, events).
 */
 
+
+/**
+ *   Call out to some prepared SQL statement.InfiniDB
+ *   */
+/*class sp_instr_stmt : public sp_instr
+{
+  sp_instr_stmt(const sp_instr_stmt &);	//< Prevent use of these
+  void operator=(sp_instr_stmt &);
+
+public:
+
+  LEX_STRING m_query;		///< For thd->query
+
+  sp_instr_stmt(uint ip, sp_pcontext *ctx, LEX *lex)
+    : sp_instr(ip, ctx), m_lex_keeper(lex, TRUE)
+  {
+    m_query.str= 0;
+    m_query.length= 0;
+  }
+
+  virtual ~sp_instr_stmt()
+  {};
+
+  virtual int execute(THD *thd, uint *nextp);
+
+  virtual int exec_core(THD *thd, uint *nextp);
+
+  virtual void print(String *str);
+
+private:
+
+  sp_lex_keeper m_lex_keeper;
+
+}; // class sp_instr_stmt : public sp_instr
+
+*/
+
 class Stored_program_creation_ctx : public Default_object_creation_ctx
 {
 public:
@@ -919,6 +956,11 @@ public:
     prelocking_ctx->set_stmt_unsafe_flags(unsafe_flags);
   }
 
+
+  // InfiniDB adds accessor
+    sp_pcontext* context() { return m_pcont; }
+    uint sp_elements() {return m_instr.elements;}
+    void set_select_number(uint num) { m_select_number= num; }
   /**
     @return root parsing context for this stored program.
   */
@@ -971,9 +1013,11 @@ public:
 private:
   /// Use sp_start_parsing() to create instances of sp_head.
   sp_head(enum_sp_type type);
-
+  sp_pcontext *m_pcont;		///< Parse context,InfiniDB
   /// SP-persistent memory root (for instructions and expressions).
   MEM_ROOT main_mem_root;
+  
+  DYNAMIC_ARRAY m_instr;	///< The "instructions",InfiniDB
 
   /// Root parsing context (topmost BEGIN..END block) of this SP.
   sp_pcontext *m_root_parsing_ctx;
@@ -1009,7 +1053,7 @@ private:
 
   /// Flags of LEX::enum_binlog_stmt_unsafe.
   uint32 unsafe_flags;
-
+  uint m_select_number; //Infinidb
 private:
   /// Copy sp name from parser.
   void init_sp_name(THD *thd, sp_name *spname);

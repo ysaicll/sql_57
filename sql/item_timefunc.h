@@ -1487,6 +1487,7 @@ class Item_extract :public Item_int_func
 };
 
 
+
 class Item_date_typecast :public Item_date_func
 {
 public:
@@ -1604,6 +1605,8 @@ public:
   void fix_length_and_dec();
   void print(String *str, enum_query_type query_type);
   const char *func_name() const { return "add_time"; }
+  // @InfiniDB add accessor
+    int get_sign() { return sign; }
 };
 
 
@@ -1661,8 +1664,8 @@ public:
 
 class Item_func_timestamp_diff :public Item_int_func
 {
-  const interval_type int_type;
 public:
+  const interval_type int_type;   // InfiniDB: Keep public
   Item_func_timestamp_diff(const POS &pos,
                            Item *a,Item *b,interval_type type_arg)
     :Item_int_func(pos, a,b), int_type(type_arg)

@@ -320,7 +320,7 @@ protected:
     it is determined if the incoming data are already distinct.
   */
   Aggregator *aggr;
-
+  Item **orig_args, *tmp_orig_args[2];//InfiniDB
 private:
   /**
     Used in making ROLLUP. Set for the ROLLUP copies of the original
@@ -338,10 +338,11 @@ private:
   bool with_distinct;
 
 public:
-
+  uint idb_arg_count;
+  Item **get_orig_args() {return orig_args;}
   bool has_force_copy_fields() const { return force_copy_fields; }
   bool has_with_distinct()     const { return with_distinct; }
-
+  
   enum Sumfunctype
   {
     COUNT_FUNC,          // COUNT
@@ -358,6 +359,18 @@ public:
     UDF_SUM_FUNC,        // user defined functions
     GROUP_CONCAT_FUNC,   // GROUP_CONCAT
     JSON_AGG_FUNC,       // JSON_ARRAYAGG and JSON_OBJECTAGG
+    FIRST_VALUE_FUNC,    //item_windowfunc.h
+    OW_NUMBER_FUNC,
+    RANK_FUNC,
+    DENSE_RANK_FUNC,
+    PERCENT_RANK_FUNC,
+    CUME_DIST_FUNC,
+    NTILE_FUNC,
+    NTH_VALUE_FUNC,
+    LEAD_FUNC,
+    LAST_VALUE_FUNC,
+    LAG_FUNC,
+    ROW_NUMBER_FUNC,
   };
 
   Item **ref_by; /* pointer to a ref to the object used to register it */
@@ -371,7 +384,8 @@ public:
   bool quick_group;			/* If incremental update of fields */
   st_select_lex *base_select; ///< query block where function is placed
 
-protected:  
+protected: 
+  Item **idb_args, *idb_tmp_arg[2]; 
   uint arg_count;
   Item **args, *tmp_args[2];
   table_map used_tables_cache;
@@ -430,7 +444,8 @@ public:
     aggregator_clear(); 
     return aggregator_add(); 
   };
-
+  inline uint idb_argument_count() const { return idb_arg_count; }
+  inline Item **idb_arguments() const { return idb_args; }
   /*
     Called when new group is started and results are being saved in
     a temporary table. Similarly to reset_and_add() it resets the 
@@ -1511,7 +1526,7 @@ class Item_func_group_concat : public Item_sum
   String *separator;
   TREE tree_base;
   TREE *tree;
-
+  ORDER **order; //InfiniDB 
   /**
      If DISTINCT is used with this GROUP_CONCAT, this member is used to filter
      out duplicates. 
@@ -1565,13 +1580,24 @@ public:
   const char *func_name() const { return "group_concat"; }
   virtual Item_result result_type () const { return STRING_RESULT; }
   virtual Field *make_string_field(TABLE *table_arg);
-  enum_field_types field_type() const
+ /* enum_field_types field_type() const
   {
     if (max_length/collation.collation->mbmaxlen > CONVERT_IF_BIGGER_TO_BLOB )
       return MYSQL_TYPE_BLOB;
     else
       return MYSQL_TYPE_VARCHAR;
+  }*/  //Move to item_sum.cc
+#if 0
+  enum_field_types field_type() const
+  {
+    if (too_big_for_varchar())
+      return MYSQL_TYPE_BLOB;
+    else
+      return MYSQL_TYPE_VARCHAR;
   }
+#else
+  enum_field_types field_type() const;
+#endif
   void clear();
   bool add();
   void reset_field() { DBUG_ASSERT(0); }        // not used
@@ -1615,6 +1641,12 @@ public:
     context= reinterpret_cast<Name_resolution_context *>(cntx);
     return false;
   }
+  // @InfiniDB added interface
+    bool isDistinct() { return distinct; }
+    uint count_field() { return arg_count_field; }
+    uint order_field() { return arg_count_order; }
+    String* str_separator() { return separator; }
+    ORDER** get_order() { return order; }
 };
 
 #endif /* ITEM_SUM_INCLUDED */

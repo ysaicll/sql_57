@@ -230,6 +230,7 @@ THD::Attachable_trx::~Attachable_trx()
 ** User variables
 ****************************************************************************/
 
+
 extern "C" uchar *get_var_key(user_var_entry *entry, size_t *length,
                               my_bool not_used MY_ATTRIBUTE((unused)))
 {
@@ -1586,6 +1587,10 @@ void THD::init(void)
   owned_gtid.dbug_print(NULL, "set owned_gtid (clear) in THD::init");
 
   rpl_thd_ctx.dependency_tracker_ctx().set_last_session_sequence_number(0);
+
+  // @INFINIDB
+    infinidb_vtable.init();
+
 }
 
 

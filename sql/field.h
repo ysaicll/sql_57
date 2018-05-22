@@ -638,6 +638,7 @@ public:
     Note that you can use table->in_use as replacement for current_thd member 
     only inside of val_*() and store() members (e.g. you can't use it in cons)
   */
+  uchar *null_ptr;                              //InfiniDB
   TABLE *table;                                 // Pointer for table
   TABLE *orig_table;                            // Pointer to original table
   const char	**table_name, *field_name;
@@ -1778,7 +1779,7 @@ protected:
 
 class Field_num :public Field {
 public:
-  const uint8 dec;
+  /*const*/ uint8 dec; //@InfiniDB need to adjust this field due to vtable restriction
   bool zerofill,unsigned_flag;	// Purify cannot handle bit fields
   Field_num(uchar *ptr_arg,uint32 len_arg, uchar *null_ptr_arg,
 	    uchar null_bit_arg, utype unireg_check_arg,

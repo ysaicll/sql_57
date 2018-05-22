@@ -543,6 +543,6 @@ struct Query_cache_query_flags
   MY_LOCALE *lc_time_names;
 };
 #define QUERY_CACHE_FLAGS_SIZE sizeof(Query_cache_query_flags)
-
+#define query_cache_send_result_to_client(A, B, C) 0
 extern Query_cache query_cache;
 #endif

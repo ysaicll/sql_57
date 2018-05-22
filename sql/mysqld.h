@@ -671,6 +671,7 @@ extern PSI_stage_info stage_deleting_from_main_table;
 extern PSI_stage_info stage_deleting_from_reference_tables;
 extern PSI_stage_info stage_discard_or_import_tablespace;
 extern PSI_stage_info stage_end;
+extern PSI_stage_info stage_enabling_keys;
 extern PSI_stage_info stage_executing;
 extern PSI_stage_info stage_execution_of_init_command;
 extern PSI_stage_info stage_explaining;
@@ -724,6 +725,7 @@ extern PSI_stage_info stage_sql_thd_waiting_until_delay;
 extern PSI_stage_info stage_statistics;
 extern PSI_stage_info stage_storing_result_in_query_cache;
 extern PSI_stage_info stage_storing_row_into_queue;
+extern PSI_stage_info stage_sorting;
 extern PSI_stage_info stage_system_lock;
 extern PSI_stage_info stage_update;
 extern PSI_stage_info stage_updating;
@@ -963,6 +965,13 @@ enum enum_query_type
     don't reveal values.
   */
   QT_NO_DATA_EXPANSION= (1 << 9),
+
+  /// InfiniDB post process to customerize item::print() functions.
+  QT_INFINIDB=(1<<10),
+  /// InfiniDB customized item:print() without quote delimiter
+  QT_INFINIDB_NO_QUOTE=(1<<11),
+    /// InfiniDB for union view as derived table. no view name is appended to the table alias.
+  QT_INFINIDB_DERIVED=(1<<12)
 };
 
 /* query_id */

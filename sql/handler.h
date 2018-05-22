@@ -296,6 +296,16 @@ enum enum_alter_inplace_result {
 */
 #define HA_CAN_INDEX_VIRTUAL_GENERATED_COLUMN (1LL << 47)
 
+/*
+  This storage engine supports condition pushdown
+ * */
+
+#define HA_CAN_TABLE_CONDITION_PUSHDOWN (1ULL << 48)
+/*
+  old name for the same flag 
+ * */
+#define HA_MUST_USE_TABLE_CONDITION_PUSHDOWN HA_CAN_TABLE_CONDITION_PUSHDOWN
+
 /* bits in index_flags(index_number) for what you can do with index */
 #define HA_READ_NEXT            1       /* TODO really use this flag */
 #define HA_READ_PREV            2       /* supports ::index_prev */

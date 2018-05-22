@@ -45,6 +45,7 @@
 #define SELECT_DISTINCT         (1ULL << 0)     // SELECT, user
 #define SELECT_STRAIGHT_JOIN    (1ULL << 1)     // SELECT, user
 // Free slot, used to be SELECT_DESCRIBE: (1ULL << 2)
+#define SELECT_DESCRIBE         (1ULL << 2)     // SELECT, user
 #define SELECT_SMALL_RESULT     (1ULL << 3)     // SELECT, user
 #define SELECT_BIG_RESULT       (1ULL << 4)     // SELECT, user
 #define OPTION_FOUND_ROWS       (1ULL << 5)     // SELECT, user

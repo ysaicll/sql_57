@@ -2072,6 +2072,7 @@ public:
 class Item_var_func :public Item_func
 {
 public:
+  LEX_STRING idb_name; // keep it public for InfiniDB
   Item_var_func() :Item_func() { }
   explicit Item_var_func(const POS &pos) :Item_func(pos) { }
 
@@ -2202,7 +2203,7 @@ class Item_func_get_user_var :public Item_var_func,
 
 public:
   Name_string name; // keep it public
-
+  LEX_STRING get_name() { return idb_name; }
   Item_func_get_user_var(Name_string a):
     Item_var_func(), m_cached_result_type(STRING_RESULT), name(a) {}
   Item_func_get_user_var(const POS &pos, Name_string a):

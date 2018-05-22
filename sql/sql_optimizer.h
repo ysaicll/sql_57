@@ -119,8 +119,8 @@ public:
       tmp_fields_list3(),
       fields_list(select->fields_list),
       error(0),
-      order(select->order_list.first, ESC_ORDER_BY),
-      group_list(select->group_list.first, ESC_GROUP_BY),
+      //order(select->order_list.first, ESC_ORDER_BY),
+      //group_list(select->group_list.first, ESC_GROUP_BY),
       explain_flags(),
       /*
         Those four members are meaningless before JOIN::optimize(), so force a
@@ -344,7 +344,18 @@ public:
   List<Item> tmp_fields_list1, tmp_fields_list2, tmp_fields_list3;
   List<Item> &fields_list; ///< hold field list
   int error; ///< set in optimize(), exec(), prepare_result()
-
+  COND *conds;
+  List<TABLE_LIST> *join_list;       ///< list of joined tables in reverse order
+  Item::cond_result cond_value, having_value;
+  ulonglong  select_options;
+  uint	   table_count;
+  bool union_part; ///< this subselect is part of union i
+  Query_result *result;
+  Item  *conds_history;                    // store WHERE for explain
+  Item  *tmp_having;                      ///< To store having when processed temporary table
+  Item  *having_history;                   ///< Store having for explain
+  Item	    *having;
+  Item *exec_const_cond;
   /**
     Wrapper for ORDER* pointer to trace origins of ORDER list 
     
@@ -846,6 +857,7 @@ private:
       use by 'execute' or 'explain'
   */
   void test_skip_sort();
+  bool exec_infinidb();
 };
 
 /// RAII class to ease the call of LEX::mark_broken() if error.

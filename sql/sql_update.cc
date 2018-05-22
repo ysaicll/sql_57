@@ -981,6 +981,11 @@ bool mysql_update(THD *thd,
                     {
                       thd->killed= THD::KILL_QUERY;
                     };);
+    // @InfiniDB. Add isInfiniDBDML to make sure it's InfiniDB dml stmt.
+      if (thd->infinidb_vtable.isInfiniDBDML && thd->is_error())
+      {
+          error= 1;
+      }
     error= (killed_status == THD::NOT_KILLED)?  error : 1;
   
     if (error &&
@@ -1078,8 +1083,14 @@ bool mysql_update(THD *thd,
     my_snprintf(buff, sizeof(buff), ER(ER_UPDATE_INFO), (long) found,
                 (long) updated,
                 (long) thd->get_stmt_da()->current_statement_cond_count());
-    my_ok(thd, thd->get_protocol()->has_client_capability(CLIENT_FOUND_ROWS) ?
-          found : updated, id, buff);
+    /*my_ok(thd, thd->get_protocol()->has_client_capability(CLIENT_FOUND_ROWS) ?
+          found : updated, id, buff);*/
+    //@Infinidb found and updated aren't correct for UPDATE. Use row_count_func instead.
+    	if ((thd->infinidb_vtable.isInfiniDBDML))
+    	  my_ok(thd, thd->get_row_count_func(), id, buff);
+    	else
+          my_ok(thd, (thd->client_capabilities & CLIENT_FOUND_ROWS) ? found : updated,
+              id, buff);
     DBUG_PRINT("info",("%ld records updated", (long) updated));
   }
   thd->count_cuted_fields= CHECK_FIELD_IGNORE;		/* calc cuted fields */
@@ -2809,9 +2820,16 @@ bool Query_result_update::send_eof()
   my_snprintf(buff, sizeof(buff), ER(ER_UPDATE_INFO),
               (long) found, (long) updated,
               (long) thd->get_stmt_da()->current_statement_cond_count());
+  //@Infinidb don't set row count on thd to push row count to the front
+  	longlong row_count_func = 0;
+        if (thd->infinidb_vtable.isInfiniDBDML)
+  	  row_count_func = thd->get_row_count_func();
+  	else
+          row_count_func = (thd->client_capabilities & CLIENT_FOUND_ROWS) ? found : updated;
   ::my_ok(thd, thd->get_protocol()->has_client_capability(CLIENT_FOUND_ROWS) ?
           found : updated, id, buff);
-  DBUG_RETURN(FALSE);
+        DBUG_RETURN(FALSE);
+        printf("%lld",row_count_func);
 }
 
 

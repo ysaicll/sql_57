@@ -1622,6 +1622,8 @@ public:
   Item *find_item(String *str);
   const CHARSET_INFO *compare_collation() { return cmp_collation.collation; }
   void cleanup();
+  // @InfiniDB
+   int get_first_expr_num() { return first_expr_num; }
 };
 
 /*
@@ -1925,7 +1927,8 @@ class Item_func_like :public Item_bool_func2
 
   bool escape_evaluated;  ///< Tells if the escape clause has been evaluated.
   bool eval_escape_clause(THD *thd);
-
+public:  //@InfiniDB
+  bool negated;
 public:
   int escape;
 

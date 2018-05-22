@@ -104,6 +104,23 @@ bool Cached_item_str::cmp(void)
   DBUG_RETURN(tmp);
 }
 
+int Cached_item_str::cmp_read_only()
+{
+  String *res= item->val_str(&tmp_value);
+
+  if (null_value)
+  {
+    if (item->null_value)
+      return 0;
+    else
+      return -1;
+  }
+  if (item->null_value)
+    return 1;
+
+  return sortcmp(&value, res, item->collation.collation);
+}
+
 Cached_item_str::~Cached_item_str()
 {
   item=0;					// Safety
@@ -149,7 +166,6 @@ bool Cached_item_json::cmp()
   {
     return false;                               // New and old are equal.
   }
-
   /*
     Otherwise, old and new are not equal, and new is not null.
     Remember the current value till the next time we're called.
@@ -164,6 +180,11 @@ bool Cached_item_json::cmp()
   m_value->to_dom();
 
   return true;
+}
+int Cached_item_json::cmp_read_only()
+{
+//TODO InfiniDB
+  return 0;
 }
 
 
@@ -180,6 +201,21 @@ bool Cached_item_real::cmp(void)
   }
   DBUG_RETURN(FALSE);
 }
+//InfiniDB
+int Cached_item_real::cmp_read_only()
+{
+  double nr= item->val_real();
+  if (null_value)
+  {
+    if (item->null_value)
+      return 0;
+    else
+      return -1;
+  }
+  if (item->null_value)
+    return 1;
+  return (nr == value)? 0 : ((nr < value)? 1: -1);
+}
 
 bool Cached_item_int::cmp(void)
 {
@@ -194,7 +230,21 @@ bool Cached_item_int::cmp(void)
   }
   DBUG_RETURN(FALSE);
 }
-
+//infinidb
+int Cached_item_int::cmp_read_only()
+{
+  longlong nr= item->val_int();
+  if (null_value)
+  {
+    if (item->null_value)
+      return 0;
+    else
+      return -1;
+  }
+  if (item->null_value)
+    return 1;
+  return (nr == value)? 0 : ((nr < value)? 1: -1);
+}
 
 bool Cached_item_temporal::cmp(void)
 {
@@ -208,6 +258,11 @@ bool Cached_item_temporal::cmp(void)
     DBUG_RETURN(TRUE);
   }
   DBUG_RETURN(FALSE);
+}
+int Cached_item_temporal::cmp_read_only()
+{
+ //TODO :no idea to implement, InfiniDB
+ return 0;
 }
 
 
@@ -243,6 +298,21 @@ bool Cached_item_field::cmp(void)
 
   DBUG_RETURN(different);
 }
+//infiniDB
+int Cached_item_field::cmp_read_only()
+{
+  if (null_value)
+  {
+    if (field->is_null())
+      return 0;
+    else
+      return -1;
+  }
+  if (field->is_null())
+    return 1;
+
+  return field->cmp(buff);
+}
 
 
 Cached_item_decimal::Cached_item_decimal(Item *it)
@@ -270,3 +340,20 @@ bool Cached_item_decimal::cmp()
   }
   return FALSE;
 }
+//infinidb
+int Cached_item_decimal::cmp_read_only()
+{
+  my_decimal tmp;
+  my_decimal *ptmp= item->val_decimal(&tmp);
+  if (null_value)
+  {
+    if (item->null_value)
+      return 0;
+    else
+      return -1;
+  }
+  if (item->null_value)
+    return 1;
+  return my_decimal_cmp(&value, ptmp);
+}
+

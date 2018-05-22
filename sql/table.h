@@ -215,7 +215,8 @@ typedef struct st_order {
   struct st_order *next;
   Item   **item;                        /* Point at item in select fields */
   Item   *item_ptr;                     /* Storage for initial item */
-
+  int    counter;                       /*position in SELECT list, correct only if counter_used is true*/
+  bool   counter_used;                  /* parameter was counter of columns */
   enum enum_order {
     ORDER_NOT_RELEVANT,
     ORDER_ASC,
@@ -1467,6 +1468,28 @@ public:
     to false for all such fields in this table.
   */
   void blobs_need_not_keep_old_value();
+  // @Infinidb if this is InfiniDB table.
+  inline bool isInfiniDB()
+    {
+      // @5978. Sometimes for internal temporary table, e.g.,
+      // derived table, the s structure is not fully initialized.
+      // However, it can never be infinidb table in such case,
+      // therefore false to be ruturned.
+      if (!s || s->table_category == TABLE_CATEGORY_TEMPORARY)
+        return false;
+  	if (s && s->db_plugin)
+  	{
+  #if (defined(_MSC_VER) && defined(_DEBUG)) || defined(SAFE_MUTEX)
+  		if ((strcmp((*s->db_plugin)->name.str, "Columnstore") == 0) ||
+  			(strcmp((*s->db_plugin)->name.str, "InfiniDB") == 0))
+  #else
+  		if ((strcmp(s->db_plugin->name.str, "Columnstore") == 0) ||
+  			(strcmp(s->db_plugin->name.str, "InfiniDB") == 0))
+  #endif
+  	  return true;
+  	}
+      return false;
+    }
 };
 
 
@@ -1538,6 +1561,7 @@ typedef struct st_field_info
 
 
 struct TABLE_LIST;
+typedef class Item COND;//infinidb
 
 typedef struct st_schema_table
 {
@@ -2228,6 +2252,7 @@ struct TABLE_LIST
     Created at parse time in st_select_lex::add_table_to_list() ->
     table_list.link_in_list().
   */
+  Item		*on_expr;		/* Used with outer join */
   TABLE_LIST *next_local;
   /* link in a global list of all queries tables */
   TABLE_LIST *next_global, **prev_global;
@@ -2318,7 +2343,7 @@ public:
     can see this lists can't be merged)
   */
   TABLE_LIST	*correspondent_table;
-private:
+public: //infinidb
   /**
      This field is set to non-null for derived tables and views. It points
      to the SELECT_LEX_UNIT representing the derived table/view.
@@ -2342,7 +2367,7 @@ public:
   /* link to select_lex where this table was used */
   st_select_lex	*select_lex;
 
-private:
+public: //Infinidb
   LEX *view;                    /* link on VIEW lex for merging */
 
 public:
@@ -2461,6 +2486,7 @@ public:
   /// TRUE <=> Filter condition is processed
   bool          replace_filter_processed;
   /* FRMTYPE_ERROR if any type is acceptable */
+  bool          compact_view_format;    /* Use compact format for SHOW CREATE VIEW ,InfiniDB*/
   enum frm_type_enum required_type;
   char		timestamp_buffer[20];	/* buffer for timestamp (19+1) */
   /*

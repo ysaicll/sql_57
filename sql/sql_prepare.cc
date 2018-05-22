@@ -123,6 +123,12 @@ using std::min;
 
 /****************************************************************************/
 
+// InfiniDB vtable processing
+extern int idb_vtable_process(THD* thd, ulonglong old_optimizer_switch);
+
+// @InfiniDB move Select_fetch_protocol_binary and Prepared_statement
+// to sql_prepare.h so we can access external
+
 /**
   Execute one SQL statement in an isolated context.
 */
@@ -3790,6 +3796,11 @@ Prepared_statement::swap_prepared_statement(Prepared_statement *copy)
 bool Prepared_statement::execute(String *expanded_query, bool open_cursor)
 {
   Query_arena *old_stmt_arena;
+  // @InfiniDB
+  TABLE_LIST* global_list = NULL;
+  TABLE_LIST* view_list = NULL;
+  bool bHasInfiniDB = false;
+  ulonglong old_optimizer_switch = thd->variables.optimizer_switch;
   char saved_cur_db_name_buf[NAME_LEN+1];
   LEX_STRING saved_cur_db_name=
     { saved_cur_db_name_buf, sizeof(saved_cur_db_name_buf) };
@@ -3885,6 +3896,71 @@ bool Prepared_statement::execute(String *expanded_query, bool open_cursor)
     mysql_mutex_unlock(&thd->LOCK_thd_data);
     return TRUE;
   }
+
+  // @infinidb. vtable process around stmt_execute.
+    // @bug3742. mysqli php support for prepare/execute stmt
+    // @bug4833. the state checking will be done inside idb_vtable_process() function
+    // check infinidb table
+    // @bug 2976. Check global tables for IDB table. If no IDB tables involved, redo this query with normal path.
+    for (global_list = thd->lex->query_tables; global_list; global_list = global_list->next_global)
+    {
+      // MCOL-618: derived and schema_table can have bad pointers to
+      // global_list->table and we don't want to worry about these types
+      // anyway.
+      if (global_list->derived || global_list->schema_table)
+        continue;
+      // MCOL-618: views also don't have a valid global_list->table pointer
+      // but the view's tables may be ColumnStore
+      if (global_list->view)
+      {
+        view_list = global_list->view->query_tables;
+        for (; view_list; view_list = view_list->next_global)
+        {
+          if (!(view_list->table && view_list->table->s && view_list->table->s->db_plugin))
+            continue;
+          if (view_list->table && view_list->table->isInfiniDB())
+          {
+            bHasInfiniDB = true;
+            break;
+          }
+        }
+        if (bHasInfiniDB)
+          break;
+      }
+      //if (!global_list->table || !global_list->table->s->db_plugin)
+      if (!(global_list->table && global_list->table->s && global_list->table->s->db_plugin))
+        continue;
+      // @InfiniDB watch out for FROM clause derived table. union memeory table has tablename="union"
+      if (global_list->table && global_list->table->isInfiniDB())
+      {
+        bHasInfiniDB = true;
+        break;
+      }
+    }
+
+    if ((bHasInfiniDB && thd->get_command() == COM_STMT_EXECUTE) || (thd->lex->sql_command == SQLCOM_CALL))
+    {
+      // @bug5298. disable re-prepare observer for infinidb query
+      thd->m_reprepare_observer = NULL;
+      if (thd->lex)
+        thd->lex->result = 0;
+      // @bug5962. reset the in_use flag so the prepared stmt
+      // can be executed again in IDB.
+      //flags|= IS_IN_USE;
+      flags&= ~ (uint) IS_IN_USE;
+      if (idb_vtable_process(thd, old_optimizer_switch)) // if failed, fall through to normal path
+      {
+        thd->infinidb_vtable.vtable_state = THD::INFINIDB_DISABLE_VTABLE;
+      }
+      else
+      {
+      //  delete_explain_query(thd->lex);
+      //  thd->set_statement(&stmt_backup);
+        return false;
+      }
+
+    }
+    // End InfiniDB
 
   /*
     At first execution of prepared statement we may perform logical
@@ -3996,6 +4072,8 @@ bool Prepared_statement::execute(String *expanded_query, bool open_cursor)
     else
       thd->get_protocol_classic()->send_out_parameters(&this->lex->param_list);
   }
+  // @InfiniDB
+   thd->variables.optimizer_switch = old_optimizer_switch;
 
   flags&= ~ (uint) IS_IN_USE;
   return error;

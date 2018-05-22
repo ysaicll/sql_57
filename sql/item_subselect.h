@@ -73,6 +73,7 @@ public:
   */
   Item *substitution;
 public:
+  bool is_correlated; //InfiniDB
   /* unit of subquery */
   st_select_lex_unit *unit;
   /**
@@ -83,7 +84,7 @@ public:
 
   /// EXPLAIN needs read-only access to the engine
   const subselect_engine *get_engine_for_explain() const { return engine; }
-
+  st_select_lex* get_select_lex();
 protected:
   /* engine that perform execution of subselect (single select or union) */
   subselect_engine *engine;
@@ -319,6 +320,8 @@ public:
     See also THD::emb_on_expr_nest.
   */
   TABLE_LIST *embedding_join_nest;
+  Item_in_optimizer *optimizer;
+    const Item_in_optimizer* getOptimizer() const { return optimizer; } // @InfiniDB
 
   Item_exists_subselect(SELECT_LEX *select);
 

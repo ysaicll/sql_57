@@ -61,7 +61,8 @@ bool Sql_cmd_delete::mysql_delete(THD *thd, ha_rows limit)
   bool          need_sort= false;
   bool          err= true;
   bool          transactional_table, const_cond_result, const_cond; // const
-
+  //bool with_select= !select_lex->item_list.is_empty();//InfiniDB
+ 
   uint usable_index= MAX_KEY;
   SELECT_LEX *const select_lex= thd->lex->select_lex;
   ORDER *order= select_lex->order_list.first;
@@ -590,11 +591,16 @@ cleanup:
               thd->get_transaction()->cannot_safely_rollback(
                   Transaction_ctx::STMT));
   free_underlaid_joins(thd, select_lex);
-  if (error < 0)
-  {
-    my_ok(thd, deleted);
-    DBUG_PRINT("info",("%ld records deleted",(long) deleted));
-  }
+  if (error < 0 ||
+        (thd->lex->ignore && !thd->is_error() && !thd->is_fatal_error))
+    {
+  	if ((thd->infinidb_vtable.isInfiniDBDML))
+        // @InfiniDB
+  	  my_ok(thd, thd->get_row_count_func());
+  	else
+        my_ok(thd, deleted);
+      DBUG_PRINT("info",("%ld records deleted",(long) deleted));
+    }
   DBUG_RETURN(thd->is_error() || thd->killed);
 
 exit_without_my_ok:

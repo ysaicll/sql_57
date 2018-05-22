@@ -2306,7 +2306,14 @@ bool DTCollation::aggregate(DTCollation &dt, uint flags)
     if (collation == &my_charset_bin)
     {
       if (derivation <= dt.derivation)
-	; // Do nothing
+      {
+      		  /* Original Mysql: Do nothing */
+      		  // @InfiniDB @bug5426
+      		  if (collation->mbmaxlen < dt.collation->mbmaxlen)
+      		  {
+      			 set(dt);
+      		  }
+            }
       else
       {
 	set(dt); 
@@ -2883,6 +2890,82 @@ void Item_ident::print(String *str, enum_query_type query_type,
   THD *thd= current_thd;
   char d_name_buff[MAX_ALIAS_NAME], t_name_buff[MAX_ALIAS_NAME];
   const char *d_name= db_name_arg, *t_name= table_name_arg;
+/*------------------------------infiniDB--------------------------------*/
+  // @infiniDB
+    if (query_type == QT_INFINIDB || query_type == QT_INFINIDB_NO_QUOTE || query_type == QT_INFINIDB_DERIVED)
+    {
+    	if (query_type != QT_INFINIDB_NO_QUOTE && query_type != QT_INFINIDB_DERIVED)
+    		str->append('`');
+
+    	// print referencing view name for IDB post process
+    	if (cached_table)
+    	{
+    		if (cached_table->db && strlen(cached_table->db) > 0)
+  	  	{
+  					str->append(cached_table->db, (uint) strlen(cached_table->db));
+  					str->append('.');
+  			}
+  			// IDB: table referenced by view is represented by "viewAlias_tableAlias"
+  			if (cached_table->referencing_view && query_type != QT_INFINIDB_DERIVED)
+  			{
+  				str->append(cached_table->referencing_view->alias, (uint)strlen(cached_table->referencing_view->alias));
+  				str->append("_");
+  			}
+  			str->append(cached_table->alias, (uint)strlen(cached_table->alias));
+  			str->append('.');
+  		}
+    	else
+    	{
+  	  	if (d_name && strlen(d_name) > 0)
+  	  	{
+  	  		str->append(d_name, (uint) strlen(d_name));
+  	  		str->append('.');
+  	  	}
+  	  	if (t_name && strlen(t_name) > 0)
+  	  	{
+  	  		str->append(t_name, (uint) strlen(t_name));
+  	  		str->append('.');
+  	  	}
+  	  }
+    	str->append(field_name, (uint) strlen(field_name));
+    	if (query_type != QT_INFINIDB_NO_QUOTE && query_type != QT_INFINIDB_DERIVED)
+    		str->append('`');
+    	return;
+    }
+
+    bool use_table_name= table_name && table_name[0];
+    bool use_db_name= use_table_name && db_name && db_name[0] && !idb_alias_name_used;
+
+    if (use_db_name && (query_type & QT_NO_DEFAULT_DB))
+      use_db_name= !thd->db().str || strcmp(thd->db().str, db_name);
+
+    if (use_db_name)
+      use_db_name= !(cached_table && cached_table->belong_to_view &&
+                     cached_table->belong_to_view->compact_view_format);
+
+    if (use_table_name && (query_type & QT_DERIVED_TABLE_ONLY_ALIAS))
+    {
+      /*
+        Don't print the table name if it's the only table in the context
+        XXX technically, that's a sufficient, but too strong condition
+      */
+      if (!context)
+        use_db_name= use_table_name= false;
+      else if (context->outer_context)
+        use_table_name= true;
+      else if (context->last_name_resolution_table == context->first_name_resolution_table)
+        use_db_name= use_table_name= false;
+      else if (!context->last_name_resolution_table &&
+               !context->first_name_resolution_table->next_name_resolution_table)
+        use_db_name= use_table_name= false;
+    }
+
+    if (!field_name || !field_name[0])
+    {
+      append_identifier(thd, str, STRING_WITH_LEN("tmp_field"));
+      return;
+    }
+    /*-----------------------------infiniDB-------------------------------------*/
 
   if (lower_case_table_names== 1 ||
       // mode '2' does not apply to aliases:
@@ -5832,6 +5915,8 @@ Item_field::fix_outer_field(THD *thd, Field **from_field, Item **reference)
 bool Item_field::fix_fields(THD *thd, Item **reference)
 {
   DBUG_ASSERT(fixed == 0);
+  // @InfiniDB @bug5501 context is not always set in InfiniDB
+  if (!context) return false;
   Field *from_field= not_found_field;
   bool outer_fixed= false;
 
@@ -6497,7 +6582,43 @@ Field *Item::make_string_field(TABLE *table)
 {
   Field *field;
   DBUG_ASSERT(collation.collation);
-  if (field_type() == MYSQL_TYPE_JSON)
+  /*----------------------------------infiniDB-------------------------------------*/
+  bool skipBlob = false;
+    if (table->in_use)
+    {
+      if (table->in_use->infinidb_vtable.vtable_state != THD::INFINIDB_DISABLE_VTABLE)
+      {
+        skipBlob = true;
+      }
+      else
+      {
+        TABLE_LIST* global_list = table->in_use->lex->query_tables;
+        for (; global_list; global_list = global_list->next_global)
+        {
+          if (global_list->table && global_list->table->isInfiniDB())
+          {
+            skipBlob = true;
+            break;
+          }
+        }
+      }
+    }
+    else if (!table->in_use && type() == Item::SUM_FUNC_ITEM && ((Item_sum*)this)->thd() &&
+            ((Item_sum*)this)->thd()->infinidb_vtable.vtable_state != THD::INFINIDB_DISABLE_VTABLE)
+    {
+      skipBlob = true;
+    }
+
+    /*
+      Note: the following check is repeated in
+      subquery_types_allow_materialization():
+    */
+   if (too_big_for_varchar() && !skipBlob)
+      field= new Field_blob(max_length, maybe_null, item_name.ptr(),
+                   collation.collation, true);
+
+    /*----------------------------------infiniDB-------------------------------------*/
+  else if (field_type() == MYSQL_TYPE_JSON)
     field= new Field_json(max_length, maybe_null, item_name.ptr());
   else if (max_length/collation.collation->mbmaxlen > CONVERT_IF_BIGGER_TO_BLOB)
     field= new Field_blob(max_length, maybe_null, item_name.ptr(),
@@ -7856,7 +7977,9 @@ Item *Item_field::update_value_transformer(uchar *select_arg)
 
 void Item_field::print(String *str, enum_query_type query_type)
 {
-  if (field && field->table->const_table &&
+  //if (field && field->table->const_table &&
+		  // @InfiniDB
+  if (field && field->table && field->table->const_table && field->table->const_table != 1 &&
       !(query_type & QT_NO_DATA_EXPANSION))
   {
     char buff[MAX_FIELD_WIDTH];
@@ -11003,3 +11126,10 @@ bool Item_field::repoint_const_outer_ref(uchar *arg)
   *is_outer_ref= false;
   return false;
 }
+/*------------------------------------infiniDB-----------------------------------------*/
+void Item::register_in(THD *thd)
+{
+  next= thd->free_list;
+  thd->free_list= this;
+}
+

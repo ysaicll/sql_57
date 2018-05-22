@@ -30,6 +30,7 @@ int mysql_multi_delete_prepare(THD *thd, uint *table_count);
 
 class Query_result_delete :public Query_result_interceptor
 {
+  public://InfiniDB
   TABLE_LIST *delete_tables;
   /// Pointers to temporary files used for delayed deletion of rows
   Unique **tempfiles;

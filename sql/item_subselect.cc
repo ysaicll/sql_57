@@ -115,6 +115,11 @@ void Item_subselect::init(st_select_lex *select_lex,
   DBUG_VOID_RETURN;
 }
 
+st_select_lex *
+Item_subselect::get_select_lex()
+{
+  return unit->first_select();
+}
 
 void Item_subselect::cleanup()
 {

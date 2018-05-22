@@ -166,6 +166,7 @@ typedef YYSTYPE *LEX_YYSTYPE;
 // describe/explain types
 #define DESCRIBE_NONE		0 // Not explain query
 #define DESCRIBE_NORMAL		1
+#define DESCRIBE_EXTENDED	2
 
 #ifdef MYSQL_SERVER
 
@@ -732,7 +733,10 @@ public:
     DBUG_ASSERT(slice_num < 5U);
     return Ref_ptr_array(&ref_pointer_array[slice_num * slice_sz], slice_sz);
   }
-
+  ulonglong options;
+  Item *where, *having;                         /* WHERE & HAVING clauses */
+  Item *prep_where; /* saved WHERE clause for prepared statement processing */
+  Item *prep_having;/* saved HAVING clause for prepared statement processing */
   Item  *where_cond() const { return m_where_cond; }
   void   set_where_cond(Item *cond) { m_where_cond= cond; }
   Item **where_cond_ref() { return &m_where_cond; }
@@ -862,7 +866,7 @@ public:
   */
   bool semijoin_disallowed;
   char *db;
-private:
+public://InfiniDB
   /**
     Condition to be evaluated after all tables in a query block are joined.
     After all permanent transformations have been conducted by
@@ -1900,6 +1904,7 @@ public:
     separated by some amount of code.
   */
   uint table_count;
+  bool  analyze_stmt; /* TRUE<=> this is "ANALYZE $stmt"  infiniDB*/
 
   /*
     These constructor and destructor serve for creation/destruction
@@ -3014,6 +3019,7 @@ public:
   char* to_log;                                 /* For PURGE MASTER LOGS TO */
   char* x509_subject,*x509_issuer,*ssl_cipher;
   String *wild;
+  List<Item>	      *insert_list,field_list,value_list,update_list;
   sql_exchange *exchange;
   Query_result *result;
   Item *default_value, *on_update_value;
@@ -3232,7 +3238,7 @@ public:
   enum enum_yes_no_unknown tx_chain, tx_release;
   bool safe_to_cache_query;
   bool subqueries;
-private:
+public: //infinidb
   bool ignore;
 public:
   bool is_ignore() const { return ignore; }

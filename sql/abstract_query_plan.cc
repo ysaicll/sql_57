@@ -210,14 +210,14 @@ namespace AQP
     DBUG_PRINT("info", ("ref().key_parts:%d", get_qep_tab()->ref().key_parts));
     DBUG_PRINT("info", ("ref().key_length:%d", get_qep_tab()->ref().key_length));
 
-    DBUG_PRINT("info", ("order:%p", get_qep_tab()->join()->order.order));
+    //DBUG_PRINT("info", ("order:%p", get_qep_tab()->join()->order->order));
     DBUG_PRINT("info", ("skip_sort_order:%d",
                         get_qep_tab()->join()->skip_sort_order));
     DBUG_PRINT("info", ("no_order:%d", get_qep_tab()->join()->no_order));
     DBUG_PRINT("info", ("simple_order:%d", get_qep_tab()->join()->simple_order));
 
     DBUG_PRINT("info", ("group:%d", get_qep_tab()->join()->grouped));
-    DBUG_PRINT("info", ("group_list:%p", get_qep_tab()->join()->group_list.order));
+    //DBUG_PRINT("info", ("group_list:%p", get_qep_tab()->join()->group_list.order));//InfiniDB TODO
     DBUG_PRINT("info", ("simple_group:%d", get_qep_tab()->join()->simple_group));
     DBUG_PRINT("info", ("group_optimized_away:%d",
                         get_qep_tab()->join()->group_optimized_away));

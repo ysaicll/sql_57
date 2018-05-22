@@ -951,7 +951,16 @@ public:
   {
     collation.set(default_charset());
     decimals=0;
-    fix_char_length(args[0]->max_length * 2);
+    if (args[0]->result_type() == DECIMAL_RESULT ||
+        	   args[0]->result_type() == REAL_RESULT ||
+        	   args[0]->result_type() == INT_RESULT)
+    	{
+        	max_length=16*collation.collation->mbmaxlen;
+    	}
+        else
+    	{
+    		fix_char_length(args[0]->max_length * 2);
+    	}
   }
 };
 
@@ -1036,6 +1045,8 @@ public:
   String *val_str(String *a);
   void fix_length_and_dec();
   virtual void print(String *str, enum_query_type query_type);
+  // @InfiniDB. add accessor
+  int castLength() { return (int) cast_length; }
 };
 
 

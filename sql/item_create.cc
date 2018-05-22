@@ -4185,7 +4185,9 @@ Create_udf_func::create(THD *thd, udf_func *udf, PT_item_list *item_list)
 
   Item *func= NULL;
   POS pos;
-
+  //@infinidb @bug5881
+    if (!(udf->dl && strcmp(udf->dl, "libcalmysql.so") == 0))
+      thd->lex->set_stmt_unsafe(LEX::BINLOG_STMT_UNSAFE_UDF);
   switch(udf->returns) {
   case STRING_RESULT:
     if (udf->type == UDFTYPE_FUNCTION)
