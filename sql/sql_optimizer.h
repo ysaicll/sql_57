@@ -157,6 +157,10 @@ public:
     // Calculate the number of groups
     for (ORDER *group= group_list; group; group= group->next)
       send_group_parts++;
+
+    /* TDSQL: Column Store */
+    conds= 0;
+    result= 0;
   }
 
   /// Query block that is optimized and executed using this JOIN
@@ -346,9 +350,9 @@ public:
   int error; ///< set in optimize(), exec(), prepare_result()
   COND *conds;
   List<TABLE_LIST> *join_list;       ///< list of joined tables in reverse order
-  Item::cond_result cond_value, having_value;
+  Item::cond_result cond_value;
   ulonglong  select_options;
-  uint	   table_count;
+  //uint	   table_count;
   bool union_part; ///< this subselect is part of union i
   Query_result *result;
   Item  *conds_history;                    // store WHERE for explain

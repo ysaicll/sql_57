@@ -113,8 +113,7 @@
 
   The graph of all equi-join conditions usable for index lookup is
   stored as an ordered sequence of Key_use elements in
-  JOIN::keyuse_array. See sort_keyuse() for details on the
-  ordering. Each JOIN_TAB::keyuse points to the first array element
+  JOIN_TAB::keyuse points to the first array element
   with the same table.
 */
 class Key_use {

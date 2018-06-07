@@ -1482,7 +1482,6 @@ bool dispatch_command(THD *thd, const COM_DATA *com_data,
     	  thd->infinidb_vtable.isInfiniDBDML = false;
     	  thd->infinidb_vtable.hasInfiniDBTable = false;
     	}
-
     	thd->variables.optimizer_switch = old_optimizer_switch;
 
 
@@ -7522,10 +7521,10 @@ int idb_vtable_process(THD* thd, ulonglong old_optimizer_switch)
 
 			// SELECT vtable processing
 			if (thd->lex->sql_command == SQLCOM_SELECT ||
-		    thd->lex->sql_command == SQLCOM_EXECUTE ||
-		    thd->lex->sql_command == SQLCOM_CALL ||
-		    thd->lex->sql_command == SQLCOM_INSERT_SELECT ||
-		    thd->get_command() == COM_STMT_EXECUTE)
+		            thd->lex->sql_command == SQLCOM_EXECUTE ||
+		            thd->lex->sql_command == SQLCOM_CALL ||
+		            thd->lex->sql_command == SQLCOM_INSERT_SELECT ||
+		            thd->get_command() == COM_STMT_EXECUTE)
 			{
 				// select into variable
 				std::string sel_into, lower_case_sel_into, limit;
@@ -7957,7 +7956,7 @@ int idb_vtable_process(THD* thd, ulonglong old_optimizer_switch)
 						insert_query = create_query.substr(0, p1);
 						create_query = create_query.substr(p1, create_query.length() - p1);
 					}
-					create = "create temporary table " + vtable_name + " engine = aria as " + create_query;
+					create = "create temporary table " + vtable_name + " engine = myisam as " + create_query;
 					thd->infinidb_vtable.create_vtable_query.mem_free();
 					thd->infinidb_vtable.create_vtable_query.append(create.c_str(), create.length());
 

@@ -320,7 +320,7 @@ protected:
     it is determined if the incoming data are already distinct.
   */
   Aggregator *aggr;
-  Item **orig_args, *tmp_orig_args[2];//InfiniDB
+  Item **orig_args;//InfiniDB
 private:
   /**
     Used in making ROLLUP. Set for the ROLLUP copies of the original

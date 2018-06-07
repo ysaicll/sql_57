@@ -460,7 +460,7 @@ JOIN::optimize()
       calling make_join_statistics() as this may call get_best_group_min_max()
       which needs a simplfied group_list.
     */
-    if (group_list && table_count == 1)
+    if (group_list && tables == 1)
     {
   	// @InfiniDB mysql treats subquery (with other engine?) as const table so will
   	// remove the columns from the subquery on the order by list. InfiniDB needs to
@@ -9589,7 +9589,7 @@ static bool make_join_select(JOIN *join, Item *cond)
   }
   DBUG_EXECUTE("where", print_where(const_cond, "constants", QT_ORDINARY););
   // @InfiniDB: skip this check for inifinidb queries
-   if (!(thd->infinidb_vtable.vtable_state == THD::INFINIDB_CREATE_VTABLE))
+ /*  if (!(thd->infinidb_vtable.vtable_state == THD::INFINIDB_CREATE_VTABLE))
      {
       if (join->exec_const_cond && !join->exec_const_cond->is_expensive() &&
                 !join->exec_const_cond->val_int())
@@ -9599,7 +9599,7 @@ static bool make_join_select(JOIN *join, Item *cond)
               DBUG_RETURN(1);	 // Impossible const condition
          }
       }
-
+*/
 
   if (const_cond != NULL)
   {

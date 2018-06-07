@@ -167,6 +167,7 @@ public:
 
   // Init. the qualified name from the db and name.
   void init_qname(THD *thd);	// thd for memroot allocation
+
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -955,12 +956,12 @@ public:
                         this, name(), unsafe_flags));
     prelocking_ctx->set_stmt_unsafe_flags(unsafe_flags);
   }
+   
+  //InfiniDB add accessor
+  sp_pcontext* context() { return m_pcont; }
+  uint sp_elements() {return m_instr.elements;}
+  void set_select_number(uint num) { m_select_number= num; }
 
-
-  // InfiniDB adds accessor
-    sp_pcontext* context() { return m_pcont; }
-    uint sp_elements() {return m_instr.elements;}
-    void set_select_number(uint num) { m_select_number= num; }
   /**
     @return root parsing context for this stored program.
   */

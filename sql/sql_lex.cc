@@ -2199,6 +2199,9 @@ st_select_lex::st_select_lex
                 Item *where, Item *having, Item *limit, Item *offset)
                 //SQL_I_LIST<ORDER> *group_by, SQL_I_LIST<ORDER> order_by)
   :
+  /* TDSQL: Column Store */
+  where(where),
+  having(having),
   next(NULL),
   prev(NULL),
   master(NULL),

@@ -566,7 +566,10 @@ Item::Item():
   is_expensive_cache(-1), rsize(0),
   marker(0), fixed(0),
   collation(&my_charset_bin, DERIVATION_COERCIBLE),
-  runtime_item(false), derived_used(false), with_subselect(false),
+  runtime_item(false),
+  /* TDSQL: Column Store */
+  name(0),
+  derived_used(false), with_subselect(false),
   with_stored_program(false), tables_locked_cache(false),
   is_parser_item(false)
 {
@@ -589,7 +592,10 @@ Item::Item(const POS &):
   is_expensive_cache(-1), rsize(0),
   marker(0), fixed(0),
   collation(&my_charset_bin, DERIVATION_COERCIBLE),
-  runtime_item(false), derived_used(false), with_subselect(false),
+  runtime_item(false),
+  /* TDSQL: Column Store */
+  name(0),
+  derived_used(false), with_subselect(false),
   with_stored_program(false), tables_locked_cache(false),
   is_parser_item(true)
 {
@@ -648,6 +654,8 @@ Item::Item(THD *thd, Item *item):
   collation(item->collation),
   cmp_context(item->cmp_context),
   runtime_item(false),
+  /* TDSQL: Column Store */
+  name(item->name),
   with_subselect(item->has_subquery()),
   with_stored_program(item->with_stored_program),
   tables_locked_cache(item->tables_locked_cache),
@@ -2841,6 +2849,10 @@ void Item_field::set_field(Field *field_par)
   fixed= 1;
   if (field->table->s->tmp_table == SYSTEM_TMP_TABLE)
     any_privileges= 0;
+
+  /* TDSQL: Column Store */
+  if (!name)
+    name= const_cast<char*>(field_name);
 }
 
 
@@ -2943,12 +2955,12 @@ void Item_ident::print(String *str, enum_query_type query_type,
       use_db_name= !(cached_table && cached_table->belong_to_view &&
                      cached_table->belong_to_view->compact_view_format);
 
-    if (use_table_name && (query_type & QT_DERIVED_TABLE_ONLY_ALIAS))
+     if (use_table_name && (query_type & QT_DERIVED_TABLE_ONLY_ALIAS))
     {
-      /*
-        Don't print the table name if it's the only table in the context
-        XXX technically, that's a sufficient, but too strong condition
-      */
+      
+      //  Don't print the table name if it's the only table in the context
+      //  XXX technically, that's a sufficient, but too strong condition
+      
       if (!context)
         use_db_name= use_table_name= false;
       else if (context->outer_context)

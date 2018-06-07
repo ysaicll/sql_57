@@ -598,13 +598,15 @@ public:
 
   uchar		*ptr;			// Position to field in record
 
-private:
+/* TDSQL: Column Store */
+public:
   /**
      Byte where the @c NULL bit is stored inside a record. If this Field is a
      @c NOT @c NULL field, this member is @c NULL.
   */
   uchar *m_null_ptr;
 
+private:
   /**
     Flag: if the NOT-NULL field can be temporary NULL.
   */
@@ -638,7 +640,7 @@ public:
     Note that you can use table->in_use as replacement for current_thd member 
     only inside of val_*() and store() members (e.g. you can't use it in cons)
   */
-  uchar *null_ptr;                              //InfiniDB
+  //uchar *null_ptr;                              //InfiniDB
   TABLE *table;                                 // Pointer for table
   TABLE *orig_table;                            // Pointer to original table
   const char	**table_name, *field_name;
